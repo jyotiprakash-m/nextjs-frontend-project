@@ -36,11 +36,11 @@ jobs:
       - name: Build Docker image
         id: build-image
         run: |
-          docker build -t ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest .
+          docker build -t ${{ env.DOCKER_USERNAME }}/nextjs-frontend-project:latest .
 
       - name: Push Docker image to Docker Hub
         run: |
-          docker push ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest
+          docker push ${{ env.DOCKER_USERNAME }}/nextjs-frontend-project:latest
 
   deploy:
     name: Deploy
@@ -61,17 +61,17 @@ jobs:
             echo "${{ env.DOCKER_PASSWORD }}" | docker login -u "${{ env.DOCKER_USERNAME }}" --password-stdin
 
             # Pull the latest Docker image
-            sudo docker pull ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest
+            sudo docker pull ${{ env.DOCKER_USERNAME }}/nextjs-frontend-project:latest
 
             # Stop and remove existing container if it exists
-            sudo docker stop ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest || true
-            sudo docker rm ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest || true
+            sudo docker stop ${{ env.DOCKER_USERNAME }}/nextjs-frontend-project:latest || true
+            sudo docker rm ${{ env.DOCKER_USERNAME }}/nextjs-frontend-project:latest || true
 
             # Free up port if needed
             sudo fuser -k ${{ env.APP_PORT }}/tcp || true
 
             # Run the Docker container
-            sudo docker run -d --name nestjs-backend-project -p ${{ env.APP_PORT }}:3000 ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest
+            sudo docker run -d --name nextjs-frontend-project -p ${{ env.APP_PORT }}:3000 ${{ env.DOCKER_USERNAME }}/nextjs-frontend-project:latest
 
             # Verify the container is running
-            sudo docker ps -a | grep nestjs-backend-project
+            sudo docker ps -a | grep nextjs-frontend-project
