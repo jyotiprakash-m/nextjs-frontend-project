@@ -1,0 +1,77 @@
+name: Deploy to Docker on EC2
+
+on:
+  push:
+    branches: ['master']
+
+env:
+  EC2_USER: ${{ secrets.EC2_USER }}
+  EC2_HOST: ${{ secrets.EC2_HOST }}
+  APP_PORT: ${{ secrets.APP_PORT }}
+  EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Log in to Docker Hub
+        run: echo "${{ env.DOCKER_PASSWORD }}" | docker login -u "${{ env.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build Docker image
+        id: build-image
+        run: |
+          docker build -t ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest .
+
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build # Ensures deploy runs only after the build job completes successfully
+    steps:
+      - name: Deploy on EC2 via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ env.EC2_SSH_KEY }}
+          script: |
+            # Verify Docker is running
+            sudo systemctl status docker || sudo systemctl start docker
+
+            # Log in to Docker Hub
+            echo "${{ env.DOCKER_PASSWORD }}" | docker login -u "${{ env.DOCKER_USERNAME }}" --password-stdin
+
+            # Pull the latest Docker image
+            sudo docker pull ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest
+
+            # Stop and remove existing container if it exists
+            sudo docker stop ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest || true
+            sudo docker rm ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest || true
+
+            # Free up port if needed
+            sudo fuser -k ${{ env.APP_PORT }}/tcp || true
+
+            # Run the Docker container
+            sudo docker run -d --name nestjs-backend-project -p ${{ env.APP_PORT }}:3000 ${{ env.DOCKER_USERNAME }}/nestjs-backend-project:latest
+
+            # Verify the container is running
+            sudo docker ps -a | grep nestjs-backend-project
