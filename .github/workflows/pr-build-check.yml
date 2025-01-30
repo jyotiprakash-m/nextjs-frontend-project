@@ -19,10 +19,7 @@ jobs:
       - name: Build Application
         run: npm run build
 
-      # Optionally, you can add a step to run tests if you have any
-      - name: Run Tests
-        run: npm test # Adjust this command based on your testing framework
-
-      # Optionally, you can add a step to lint your code
-      - name: Lint Code
-        run: npm run lint # Adjust this command based on your linting setup
+      - name: Build Docker image
+        id: build-image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/nextjs-frontend-project:latest .
