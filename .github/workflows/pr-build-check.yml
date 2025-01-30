@@ -1,0 +1,28 @@
+name: Build Check on Pull Request
+
+on:
+  pull_request:
+    branches: ['main']
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Application
+        run: npm run build
+
+      # Optionally, you can add a step to run tests if you have any
+      - name: Run Tests
+        run: npm test # Adjust this command based on your testing framework
+
+      # Optionally, you can add a step to lint your code
+      - name: Lint Code
+        run: npm run lint # Adjust this command based on your linting setup
